@@ -213,7 +213,7 @@ void display_tm_left()
 // display messages for main menu
 const char menu_msg[][LN_LCD_LENGHT+1] = {
 // 01234567890123456789
-  "RELAIS              ", 
+  "RELAIS          ", 
   "COMMUTATIONS        ", 
   "HORLOGE             "
   };

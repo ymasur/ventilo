@@ -4,7 +4,7 @@
  00.08.2019 - ymasur@microclub.ch
  */
 #define __PROG__ "ventilo_cmd"
-#define VERSION "0.32 " // Module version
+#define VERSION "0.33 " // Module version
 #define DEBUG 1 // level 0 - 1 - 2
 
 #include <Arduino.h>

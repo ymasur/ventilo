@@ -96,14 +96,14 @@ void log_msg(String msg)
   Serial.println(msg);
 }
 
-/*  display_date(void)
+/*  display_clock(void)
     ------------------
     Write the value of date & time on line 3
     Global var modified:
     - myTime
     - dateTimeStr, with the new value
 */
-void display_date(void)
+void display_clock(void)
 {
   snprintf(dateTimeStr, sizeof(dateTimeStr), "%04d-%02d-%02d %02d:%02d:%02d",
           myTime.year(),
@@ -228,8 +228,7 @@ void poll_loop_5()
 {
   myTime = rtc.now(); // take the actual time
   digitalWrite(LED13, !digitalRead(LED13)); // phase reversed
-  //menu_select();
-  display_date();  
+  display_clock();  
   display_menu();
   if (myTime.second() == 1) // once per minute
     chk_relay_time();
@@ -238,9 +237,8 @@ void poll_loop_5()
 
 void poll_loop_100ms()
 {
-  short i;
   // scan all switches
-  for(i=0; i<SW_NB; i++)
+  for(short i=0; i<SW_NB; i++)
   {
     sw[i]->scan();
   }
