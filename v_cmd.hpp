@@ -1,10 +1,14 @@
 /*
- v_cmd.hpp
- ---------
- 00.08.2019 - ymasur@microclub.ch
+  v_cmd.hpp
+  ---------
+  24.08.2019 - ymasur@microclub.ch
+
+  Main module definitions
  */
-#define __PROG__ "ventilo_cmd"
-#define VERSION "0.33 " // Module version
+#define __PROG__ "Ventilo_cmd"
+#define VERSION "0.90" // Module version
+#define EEPROM_VERS 1
+#define EEPROM_DATA_OFFSET 10
 #define DEBUG 1 // level 0 - 1 - 2
 
 #include <Arduino.h>
@@ -13,7 +17,6 @@
 #include <Wire.h>
 #include <time.h>
 #include <RTClib.h>
-//#include <EEPROM.h>
 #include <jm_Scheduler.h>
 #include <jm_LCM2004_I2C.h>
 #include <jm_LCM2004_I2C_Plus.h>
@@ -21,13 +24,13 @@
 #ifndef V_CMD_HPP
 #define V_CMD_HPP
 
-#ifdef MAIN
+#ifdef MAIN // Storage class definition
   #define CLASS
 #else
   #define CLASS extern
 #endif
 			/* variable limited  */
-#define BOUND(val,min,max)	\
+#define BOUND(val, min, max)	  \
 {                               \
    if (val > max) val = max;    \
    if (val < min) val = min;    \
@@ -54,7 +57,10 @@
 #define B_MINUS 2
 #define B_OK 3
 
-#define LED13 13    // LED red is connected to pin 13
+#define LED13 13    // LED connected to pin 13, used as life signal
+
+#define EEPROM_SIGNATURE 0x5A // caution: if the signature is not regnized, erase of datas!
+#define EEPROM_VERSION 1  //0 .. 255 - if not recognisez, no writing of datas
 
 // prototypes (needed for VSCode/PlateformIO)
 void blink(short, short);
@@ -64,7 +70,8 @@ void poll_loop_100ms();
 void display_info(String info);
 void log_msg(String msg);
 void dateTime_up_ascii();
-
+uint8_t init_time_tables();
+void eepromInit();
 
 class CmutRel
 {
@@ -91,7 +98,7 @@ class CmutRel
   void on();      // make the relay ON while a time
   void off();     // makes the relais and LED off
 
-  uint8_t run();
+  uint8_t run();  // must be called each 500 ms
 };
 
 //Global inst. are defined here
@@ -103,8 +110,5 @@ CLASS jm_LCM2004_I2C_Plus *lcd;
 // list of scheduler used
 CLASS jm_Scheduler pulse_500ms;
 CLASS jm_Scheduler pulse_100ms;
-
-//CLASS RTC_DS3231 rtc;
-//CLASS DateTime myTime;
 
 #endif // V_CMD_HPP

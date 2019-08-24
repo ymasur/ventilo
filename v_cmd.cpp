@@ -1,12 +1,13 @@
 /*
- v_cmd.cpp
- ---------
- 00.08.2019 - ymasur@microclub.ch
+  v_cmd.cpp
+  ---------
+  24.08.2019 - ymasur@microclub.ch
  */
 #ifndef MAIN  // this is the main module
 #define MAIN
 
 #include <Arduino.h>
+// #include <EEPROM.h>   // local to this module
 
 #include "v_rtc.hpp"
 #include "v_cmd.hpp"
@@ -51,13 +52,26 @@ void setup()
     blink(30,1);  // pulse LED13 3.0 sec at 0.1 Hz 
   }
 
-#if 1
   if (rtc.lostPower()) 
   {             //012345678901234567890
     display_info("RTC lost power!     "); delay(2000);
     blink(10,1);  // pulse LED13 n at 0.1 Hz 
   }
-#endif
+
+  if (EEPROM.read(0) != EEPROM_SIGNATURE)
+  {
+    display_info("EEPROM signature != "); delay(2000);
+    eepromInit();
+    blink(10,1);  // pulse LED13 n at 0.1 Hz
+  }
+  else
+  {
+    display_info("Commutations read..."); delay(2000);
+    for (u16 i = 0; i < 4; i++)
+    {
+      pTimeCommute[i].read_EEPROM(i);
+    }
+  }
 
   myTime = rtc.now(); // get the RTC time
 
@@ -66,17 +80,38 @@ void setup()
               //012345678901234567890
   display_info(F("Start polling loops  ")); delay(1000);
   pulse_500ms.start(poll_loop_5, 1000L * 500);
-  pulse_100ms.start(poll_loop_100ms, 1000L * 100);
+  pulse_100ms.start(poll_loop_100ms, 1000L * 50);
 
   display_info(F("Programme pret.      "));
   log_msg(F(__PROG__ " " VERSION "\n"));
 
 } // setup
 
+/*  eepromInit()
+    ------------
+    Prepare the datas of the EEPROM
+*/
+void eepromInit()
+{
+      // Formatter l'EEPROM
+    for (uint16_t i = 0 ; i < EEPROM.length() ; i++) 
+       EEPROM.write( i, 0 );
+    Serial.println( "EEPROM cleared!" );
+    
+    // Valeur par défaut pour savoir si l'EEPROM est formatté
+    EEPROM.write( 0, EEPROM_SIGNATURE ); 
+    Serial.println( "EEPROM signature written..." );
+
+    // Définir une version
+    EEPROM.write( 1, EEPROM_VERSION ); 
+    Serial.println( "Version written." );
+    
+}
+
 /* blink(short n=1, short t=1)
    ---------------------------
    Blink n times, with impulse cycle t (1/10 sec)
-   Used only in setup operations
+   *** Used only in setup operations ***
    I/O used: LED13
    return: -
 */
@@ -205,7 +240,7 @@ uint8_t CmutRel::run()
  */
 void chk_relay_time()
 {
-  for (int i=0; i<4; i++)
+  for (short i=0; i<4; i++)
     if (pTimeCommute[i].chk_time() )
     {
       char ln_menu[21];

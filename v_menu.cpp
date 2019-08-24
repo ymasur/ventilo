@@ -1,8 +1,8 @@
 /*
- v_menu.hpp
- ---------
- 00.08.2019 - ymasur@microclub.ch
- */
+  v_menu.hpp
+  ---------
+  24.08.2019 - ymasur@microclub.ch
+*/
 #include <Arduino.h>
 #include "v_cmd.hpp"
 #include "v_rtc.hpp"
@@ -11,35 +11,7 @@
 #ifndef V_MENU_CPP
 #define V_MENU_CPP
 
-static DateTime newTime;
-
-#if (DEBUG >= 2)
-void sw_display_buttons()
-{
-  lcd->set_cursor(0,3);
-  // scan all switches
-  for(u8 i=0; i<4; i++)
-  {    
-    lcd->print(sw[i]->getName());
-    lcd->print(sw[i]->getPressed() ? "1 " : "0 " );
-  }
-}
-
-void sw_log_pressed()
-{
-  // scan all switches
-  for(u8 i=0; i<4; i++)
-  {    
-    if (sw[i]->getPressed()) 
-    {
-      Serial.print(i);
-      Serial.print("->");
-      Serial.print(sw[i]->getName());
-      Serial.println(" presse" );
-    }
-  }
-}
-#endif
+static DateTime newTime; // Used to handle the time of the menu CLOCK
 
 /*
     menu_select()
@@ -48,8 +20,17 @@ void sw_log_pressed()
 void menu_select()
 {
 
-  if (sw[B_OK]->getActivated() && sw[B_ACT]->getPressed())
-  {menu = smenu = 0;} //reset menu
+  if ( sw[B_ACT]->getPressed() && sw[B_OK]->getActivated() )  // Q: ACT and OK pressed?
+  { menu = smenu = 0; }                                       // A:yes, reset menu
+
+  if (menu == 0 && smenu == 0 &&                              // Q: ACT and OK pressed ~ 5 seconds?
+      sw[B_ACT]->getPressed() && sw[B_ACT]->getTm() > 400 &&
+      sw[B_OK]->getPressed() && sw[B_OK]->getTm() > 400     ) 
+  { 
+    EEPROM.read(1); // bidon - compiler warning
+    eepromInit();                                             // A: yes, EEPROM data cleared
+    smenu = 1; 
+  }                               
 
   if (sw[B_ACT]->getActivated())
   {
@@ -58,7 +39,6 @@ void menu_select()
     if (menu > 3) menu = 0;
   } 
   
-
   if (menu == 1)  // --- MENU RELAIS ---
   {
     if (smenu == 0)
@@ -94,7 +74,9 @@ void menu_select()
     }
 
     if (smenu == 0)
-    {}
+    {
+      /* */
+    }
     else if (smenu <10)       // Table selection (1..4)
     {
       if (sw[B_PLUS]->getActivated()) smenu++;
@@ -104,18 +86,18 @@ void menu_select()
     }
     else if (smenu < 20)      // OK pressed once: HH modified (00-23)
     {
-      if (sw[B_PLUS]->getPressed())
+      if (sw[B_PLUS]->getRepeted())
         pTimeCommute[commute_nb].inc_hh();
 
-      if (sw[B_MINUS]->getPressed())
+      if (sw[B_MINUS]->getRepeted())
         pTimeCommute[commute_nb].dec_hh();
     }
     else if(smenu < 30)       // OK pressed twice: MM modified (00-59)
     {
-      if (sw[B_PLUS]->getPressed())
+      if (sw[B_PLUS]->getRepeted())
         pTimeCommute[commute_nb].inc_mm();
 
-      if (sw[B_MINUS]->getPressed())
+      if (sw[B_MINUS]->getRepeted())
         pTimeCommute[commute_nb].dec_mm();     
     }
     else if(smenu < 40)       // OK pressed thirdly: wd modified (0..7)
@@ -127,8 +109,9 @@ void menu_select()
         pTimeCommute[commute_nb].inc_wd();     
     }
 
-    if (smenu >40)          // last field pointed, end
+    if (smenu >50)          // save values, end
     {
+      pTimeCommute[commute_nb].save_EEPROM(commute_nb);
       menu = smenu = 0;     //reset menu
     } 
   } // menu 2
@@ -144,35 +127,34 @@ void menu_select()
     }
     else if (smenu < 2)      // year
     {
-      if (sw[B_PLUS]->getActivated()) yy++;
-      if (sw[B_MINUS]->getActivated()) yy--;
+      if (sw[B_PLUS]->getRepeted()) yy++;
+      if (sw[B_MINUS]->getRepeted()) yy--;
     } 
     else if (smenu < 3)      // month
     {
-      if (sw[B_PLUS]->getActivated()) mm++;
-      if (sw[B_MINUS]->getActivated()) mm--;
+      if (sw[B_PLUS]->getRepeted()) mm++;
+      if (sw[B_MINUS]->getRepeted()) mm--;
     }
     else if (smenu < 4)      // day
     {
-      if (sw[B_PLUS]->getActivated()) dd++;
-      if (sw[B_MINUS]->getActivated()) dd--;
+      if (sw[B_PLUS]->getRepeted()) dd++;
+      if (sw[B_MINUS]->getRepeted()) dd--;
     }
     else if (smenu < 5)      // hour
     {
-      if (sw[B_PLUS]->getActivated()) hh++;
-      if (sw[B_MINUS]->getActivated()) hh--;
+      if (sw[B_PLUS]->getRepeted()) hh++;
+      if (sw[B_MINUS]->getRepeted()) hh--;
     }
     else if (smenu < 6)      // minute
     {
-      if (sw[B_PLUS]->getActivated()) mi++;
-      if (sw[B_MINUS]->getActivated()) mi--;
+      if (sw[B_PLUS]->getRepeted()) mi++;
+      if (sw[B_MINUS]->getRepeted()) mi--;
     }
 
     if (sw[B_OK]->getActivated())  smenu+=1;
 
     if (smenu > 6)          // last field pointed, end
     {
-      //newTime.second = 1;
       rtc.adjust(newTime);
       menu = smenu = 0;     //reset menu
     } 
@@ -196,7 +178,6 @@ void display_info(String info)
   display_info(info, 2);
 }
 
-
 /*  display_tm_left()
     -----------------
     Display the time left if the REL is On.
@@ -213,7 +194,7 @@ void display_tm_left()
 // display messages for main menu
 const char menu_msg[][LN_LCD_LENGHT+1] = {
 // 01234567890123456789
-  "RELAIS          ", 
+  "RELAIS          ",   // mention ": ON" / ":OFF" complete the line
   "COMMUTATIONS        ", 
   "HORLOGE             "
   };
@@ -224,7 +205,7 @@ const char menu_msg[][LN_LCD_LENGHT+1] = {
     Then, shows satus
     Globals vars used:
     - menu: main menu level
-    - smenu: sub-menu level
+    - smenu: sub-menu level, or field
     Vars modified:
     - nothing
     Return: -
@@ -261,7 +242,7 @@ void display_menu()
         display_tm_left();
       break;
       }
-    break;
+    break; // base menu
 
     /* ---------------- RELAY MENU --------------- */
     case 1:   
@@ -280,7 +261,7 @@ void display_menu()
         lcd->print(F(": ON"));
       }
 
-      break;
+      break; // relay menu
 
     /* ---------------- SWITCHING TABLE ------------- */
     case 2: 
@@ -315,6 +296,8 @@ void display_menu()
             else
               c = 12 + pTimeCommute[n].get_wd();
           break;
+          case 5: 
+
           default: 
             c = 0; 
           break;  
@@ -322,18 +305,25 @@ void display_menu()
         // clear bottom line
         lcd->set_cursor(0, 3); lcd->print_space(LN_LCD_LENGHT); 
 
-        if (c)  // Q: field given?
-        {       // A: yes, show it
-          lcd->set_cursor(c, 3); lcd->print("*");
-        }
-        else    // special: all days to show
+        if (field < 5)
         {
-          lcd->set_cursor(13,3); lcd->print(F("-------"));
+          if (c)  // Q: field given?
+          {       // A: yes, show it
+            lcd->set_cursor(c, 3); lcd->print("*");
+          }
+          else    // special: all days to show
+          {
+            lcd->set_cursor(13,3); lcd->print(F("-------"));
+          }
+        }
+        else
+        {
+          lcd->set_cursor(0, 3); lcd->print(F("Sauver? "));
         }
         
       }
       
-      break;
+      break; // case 2, switching table menu
 
     /* -------------- CLOCK ADJUST -------------- */
     case 3: 
@@ -372,7 +362,7 @@ void display_menu()
         }
         
       } // if smenu <> 0
-      break;  
+      break; // clock menu
 
     default:
       break;

@@ -1,7 +1,7 @@
 /*
  v_rtc.cpp
  ---------
- 00.08.2019 - ymasur@microclub.ch
+ 24.08.2019 - ymasur@microclub.ch
 */
 #ifndef V_RTC_CPP
 #define V_RTC_CPP
@@ -52,4 +52,36 @@ bool TimeCommute::chk_time()
   return false;
 }
 
+/*  read_EEPROM()
+    -------------
+    Read values stored in the EEPROM.
+    Parm: n = set of TimeCommute table (0.. n)
+
+    Modified values:
+    - hh, mm and wd
+
+    Return: nothing
+*/
+void TimeCommute::read_EEPROM(u16 n)
+{
+    u16 pos = n * 3 + EEPROM_DATA_OFFSET;
+
+    hh = EEPROM.read(pos);
+    mm = EEPROM.read(++pos);
+    wd = EEPROM.read(++pos);
+}
+
+void TimeCommute::save_EEPROM(u16 n)
+{
+  if( EEPROM.read(1) == EEPROM_VERSION)
+  {
+    uint16_t pos = n * 3 + EEPROM_DATA_OFFSET;
+    EEPROM.write(pos, hh);
+    EEPROM.write(++pos, mm);
+    EEPROM.write(++pos, wd);
+  }
+  else
+  { //error
+  };
+}
 #endif
