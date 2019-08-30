@@ -1,12 +1,12 @@
 /*
   v_cmd.hpp
   ---------
-  24.08.2019 - ymasur@microclub.ch
+  30.08.2019 - ymasur@microclub.ch
 
   Main module definitions
  */
 #define __PROG__ "Ventilo_cmd"
-#define VERSION "0.90" // Module version
+#define VERSION "0.92" // Module version
 #define EEPROM_VERS 1
 #define EEPROM_DATA_OFFSET 10
 #define DEBUG 1 // level 0 - 1 - 2
@@ -66,7 +66,7 @@
 void blink(short, short);
 void poll_loop_5();
 #define POLL_FREQ (2)
-void poll_loop_100ms();
+void poll_loop_X_ms();
 void display_info(String info);
 void log_msg(String msg);
 void dateTime_up_ascii();
@@ -108,7 +108,7 @@ CLASS CmutRel cmutRel;
 CLASS jm_LCM2004_I2C_Plus *lcd;
 
 // list of scheduler used
-CLASS jm_Scheduler pulse_500ms;
-CLASS jm_Scheduler pulse_100ms;
+CLASS jm_Scheduler pulse_500ms; // refresh of LCD display; main loop
+CLASS jm_Scheduler pulse_X_ms;  // scan of buttons
 
 #endif // V_CMD_HPP

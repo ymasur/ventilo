@@ -1,7 +1,7 @@
 /*
   v_menu.hpp
   ---------
-  24.08.2019 - ymasur@microclub.ch
+  30.08.2019 - ymasur@microclub.ch
 */
 #include <Arduino.h>
 #include "v_cmd.hpp"
@@ -229,9 +229,7 @@ void display_menu()
       switch(cmutRel.getSt()) // follow REL activity
       {
       case CR_OFF:    // resting state
-        //          12345678901234567890
-        lcd->set_cursor(0,3);
-        lcd->print(F("AC:choix, OK:valider"));
+        //            12345678901234567890
         lcd->set_cursor(0,2);
         lcd->print(F("Menu principal      "));
       break;
@@ -242,24 +240,30 @@ void display_menu()
         display_tm_left();
       break;
       }
+      lcd->set_cursor(0,3);
+      lcd->print(F("AC:choix, OK:valider"));
     break; // base menu
 
     /* ---------------- RELAY MENU --------------- */
     case 1:   
       //log_msg(menu_msg[0]);
       lcd->print(menu_msg[0]);
-
+     
       if (smenu == 1)
       {
         log_msg(F("RELAY:OFF"));
         lcd->print(F(":OFF"));
-      }     
-
-      if (smenu == 2)
+      }
+      else if (smenu == 2)
       {
         log_msg(F("RELAY: ON"));
         lcd->print(F(": ON"));
       }
+      else
+      {
+        lcd->print(F("    "));  // erase if timing schown
+      }
+      
 
       break; // relay menu
 

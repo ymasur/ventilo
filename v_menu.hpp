@@ -1,7 +1,7 @@
 /*
  v_menu.hpp
  ---------
- 24.08.2019 - ymasur@microclub.ch
+ 30.08.2019 - ymasur@microclub.ch
  */
 #include <arduino.h>
 #include "v_cmd.hpp"
@@ -16,6 +16,12 @@
 #define B_PLUS 1
 #define B_MINUS 2
 #define B_OK 3
+
+#define B_SCAN_PERIOD 20  // in millisecond
+
+// compute the repetition delay for a button continuously pressed
+// ex. 4x/sec: 1000/(10*4) = 25 ; gives -> 250 ms
+#define B_REP(n) (1000/((B_SCAN_PERIOD) * n))
 
 #ifdef MAIN
   #define CLASS
@@ -60,7 +66,7 @@ class Sw
 
 /*  scan()
     ------
-    Must be called each 10 ms
+    Must be called each 10..50 ms
  */
   void scan()
   {
@@ -68,7 +74,7 @@ class Sw
     bool in = !digitalRead(pin);  // get the reversed value
     if (in != state)    // Q: pin state changed?
     {                   // A: yes,
-      state = !state;
+      state = in;       // Store value & reset counter
       timer = 0;
     }
   }
@@ -79,7 +85,7 @@ class Sw
   inline short getTm(){ return timer; }
   inline String getName(){ return name; }
   inline bool getPressed(){ if (state==true && timer>=1) return true; return false; }
-  inline bool getRepeted(){ if (state==true && timer%20==0) return true; return false; }
+  inline bool getRepeted(){ if (state==true && timer%B_REP(4)==0) return true; return false; }
   inline bool getChanged(){ if (timer<=1) return true; return false; }
   inline bool getActivated(){ if (getChanged() && getPressed()) return true; return false; }
 

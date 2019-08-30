@@ -1,7 +1,11 @@
 /*
   v_cmd.cpp
   ---------
-  24.08.2019 - ymasur@microclub.ch
+  30.08.2019 - ymasur@microclub.ch
+
+  Main module:
+  - setup of hardware I/O
+  - setup of soft tasks and objects
  */
 #ifndef MAIN  // this is the main module
 #define MAIN
@@ -52,11 +56,13 @@ void setup()
     blink(30,1);  // pulse LED13 3.0 sec at 0.1 Hz 
   }
 
+#if 0
   if (rtc.lostPower()) 
   {             //012345678901234567890
     display_info("RTC lost power!     "); delay(2000);
     blink(10,1);  // pulse LED13 n at 0.1 Hz 
   }
+#endif
 
   if (EEPROM.read(0) != EEPROM_SIGNATURE)
   {
@@ -80,7 +86,7 @@ void setup()
               //012345678901234567890
   display_info(F("Start polling loops  ")); delay(1000);
   pulse_500ms.start(poll_loop_5, 1000L * 500);
-  pulse_100ms.start(poll_loop_100ms, 1000L * 50);
+  pulse_X_ms.start(poll_loop_X_ms, 1000L * B_SCAN_PERIOD);
 
   display_info(F("Programme pret.      "));
   log_msg(F(__PROG__ " " VERSION "\n"));
@@ -234,25 +240,32 @@ uint8_t CmutRel::run()
 /*  chk_relay_time()
     ----------------
     Once a minute, check in the commutation time if a match is found.
+    Called by poll_loop_5().
     Start the LED_C to blink
     00:00 is considered as uninitialized and do nothing.
     
- */
+    Return: -
+*/
 void chk_relay_time()
 {
   for (short i=0; i<4; i++)
     if (pTimeCommute[i].chk_time() )
     {
       char ln_menu[21];
-      cmutRel.on_LED();
+
+      if (cmutRel.getSt() == CR_OFF) // Q: is relay OFF?
+          cmutRel.on_LED();          // A: yes, start sequence
+
       cmutRel.commute_table = i+1; // memorize the table found
 
       snprintf(ln_menu, sizeof(ln_menu), "COMM. %1d -> %02d:%02d ", 
-      cmutRel.commute_table, pTimeCommute[i].get_hh(), pTimeCommute[i].get_mm());        
+               cmutRel.commute_table, pTimeCommute[i].get_hh(), pTimeCommute[i].get_mm()
+              ); 
+
       display_info(ln_menu, 3);
     }
         
-}
+} // end chk_relay_time()
 
 /*  poll_loop_5()
     -------------
@@ -270,7 +283,11 @@ void poll_loop_5()
   cmutRel.run();
 }
 
-void poll_loop_100ms()
+/*  poll_loop_X_ms()
+    ----------------
+
+*/
+void poll_loop_X_ms()
 {
   // scan all switches
   for(short i=0; i<SW_NB; i++)
