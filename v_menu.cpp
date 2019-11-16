@@ -1,7 +1,7 @@
 /*
   v_menu.hpp
   ---------
-  30.08.2019 - ymasur@microclub.ch
+  01.09.2019 - ymasur@microclub.ch
 */
 #include <Arduino.h>
 #include "v_cmd.hpp"
@@ -24,15 +24,15 @@ void menu_select()
   { menu = smenu = 0; }                                       // A:yes, reset menu
 
   if (menu == 0 && smenu == 0 &&                              // Q: ACT and OK pressed ~ 5 seconds?
-      sw[B_ACT]->getPressed() && sw[B_ACT]->getTm() > 400 &&
-      sw[B_OK]->getPressed() && sw[B_OK]->getTm() > 400     ) 
+      sw[B_ACT]->getPressed() && sw[B_ACT]->getTm() > B_WAIT(5) &&
+      sw[B_OK]->getPressed() && sw[B_OK]->getTm() > B_WAIT(5)     ) 
   { 
     EEPROM.read(1); // bidon - compiler warning
     eepromInit();                                             // A: yes, EEPROM data cleared
     smenu = 1; 
   }                               
 
-  if (sw[B_ACT]->getActivated())
+  if (sw[B_ACT]->getActivated())    // [AC] -> menu choice
   {
     menu ++; // 0..3 menus
     smenu = 0;
@@ -68,7 +68,7 @@ void menu_select()
     if (sw[B_OK]->getActivated())  
     {
       if (smenu == 0)
-        smenu = 1;   // selct the table number
+        smenu = 1;   // select the table number
       else
         smenu+=10;  // next field of table
     }
@@ -81,7 +81,7 @@ void menu_select()
     {
       if (sw[B_PLUS]->getActivated()) smenu++;
       if (sw[B_MINUS]->getActivated()) smenu--;
-      BOUND(smenu, 1, 4);
+      BOUND(smenu, 1, NB_TABLES);
       commute_nb = smenu-1;
     }
     else if (smenu < 20)      // OK pressed once: HH modified (00-23)
@@ -118,8 +118,8 @@ void menu_select()
 
   if (menu == 3)      // --- MENU HORLOGE ---
   {
-    uint16_t yy=0;
-    uint8_t mm=0, dd=0, hh=0, mi = 0;
+    uint16_t yy=0;    // vars automatic, because handle only +1, or -1 delta value
+    uint8_t mm=0, dd=0, hh=0, mi = 0; // complete value is stored in newTime structure
 
     if (smenu <1)            // Time selection
     {
@@ -158,7 +158,7 @@ void menu_select()
       rtc.adjust(newTime);
       menu = smenu = 0;     //reset menu
     } 
-    newTime = DateTime(newTime.year()+yy, 
+    newTime = DateTime(newTime.year()+yy,   // catch and store only différence (if any)
               newTime.month()+mm, newTime.day()+dd, 
               newTime.hour()+hh, newTime.minute()+mi, 0 );
   } // Menu 3

@@ -1,12 +1,12 @@
 /*
   v_cmd.hpp
   ---------
-  30.08.2019 - ymasur@microclub.ch
+  01.09.2019 - ymasur@microclub.ch
 
   Main module definitions
  */
 #define __PROG__ "Ventilo_cmd"
-#define VERSION "0.92" // Module version
+#define VERSION "0.96" // software version
 #define EEPROM_VERS 1
 #define EEPROM_DATA_OFFSET 10
 #define DEBUG 1 // level 0 - 1 - 2
@@ -38,7 +38,7 @@
 
 // IO pin are defined here
 #define LED_C A0    // LED C, display state of relay cmd
-#define LED_ON() digitalWrite(LED_C, 0)
+#define LED_ON() digitalWrite(LED_C, 1) // Anode command version
 #define LED_OFF() digitalWrite(LED_C, 0)
 
 #define REL A1
@@ -65,13 +65,14 @@
 // prototypes (needed for VSCode/PlateformIO)
 void blink(short, short);
 void poll_loop_5();
-#define POLL_FREQ (2)
+#define POLL_FREQ (2) // used to compute other times
 void poll_loop_X_ms();
 void display_info(String info);
 void log_msg(String msg);
 void dateTime_up_ascii();
 uint8_t init_time_tables();
 void eepromInit();
+void eeprom_read_tables();
 
 class CmutRel
 {

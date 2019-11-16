@@ -23,6 +23,9 @@
 // ex. 4x/sec: 1000/(10*4) = 25 ; gives -> 250 ms
 #define B_REP(n) (1000/((B_SCAN_PERIOD) * n))
 
+// compute a waiting time in sec. of a pressed button
+#define B_WAIT(n_sec) ((n_sec)*(1000/(B_SCAN_PERIOD)))
+
 #ifdef MAIN
   #define CLASS
 #else
@@ -66,7 +69,7 @@ class Sw
 
 /*  scan()
     ------
-    Must be called each 10..50 ms
+    Must be called each 10..50 ms, depend of B_SCAN_PERIOD
  */
   void scan()
   {

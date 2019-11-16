@@ -1,7 +1,7 @@
 /*
   v_rtc.hpp
   ---------
-  24.08.2019 - ymasur@microclub.ch
+  01.09.2019 - ymasur@microclub.ch
 */
 #ifndef V_RTC_HPP
 #define V_RTC_HPP
@@ -39,15 +39,17 @@ class TimeCommute
   }
 
   bool chk_time();
-  void inc_hh(){hh++; if (hh>23) hh=0;} // roll down
-  void inc_mm(){mm++; if (mm>59) mm=0;}
-  void dec_hh(){hh--; if (hh>23) hh=23;} // goes to 255...
-  void dec_mm(){mm--; if (mm>59) mm=59;}
-  void inc_wd(){wd++; if (wd >7) wd=0;}
-  void dec_wd(){wd--; if (wd==255) wd=0;}
-  int get_hh(){return hh;}
-  int get_mm(){return mm;}
-  int get_wd(){return wd;}
+  
+  inline void inc_hh(){hh++; if (hh>23) hh=0;} // roll down
+  inline void inc_mm(){mm++; if (mm>59) mm=0;}
+  inline void dec_hh(){hh--; if (hh>23) hh=23;} // goes to 255...
+  inline void dec_mm(){mm--; if (mm>59) mm=59;}
+  inline void inc_wd(){wd++; if (wd >7) wd=0;}
+  inline void dec_wd(){wd--; if (wd==255) wd=0;}
+  inline int get_hh(){return hh;}
+  inline int get_mm(){return mm;}
+  inline int get_wd(){return wd;}
+  
   void read_EEPROM(u16 n);
   void save_EEPROM(u16 n);
 
@@ -63,10 +65,11 @@ CLASS const char *swd[] // String for day of week
 #endif
 
 // 4 tables for commutation, static storage
-CLASS TimeCommute timeCommute1, timeCommute2, timeCommute3, timeCommute4;
-CLASS TimeCommute pTimeCommute[]  // useful in an array
-#ifdef MAIN // init static array
-= { timeCommute1, timeCommute2, timeCommute3, timeCommute4 };
+#define NB_TABLES 6
+CLASS TimeCommute timeCommute1, timeCommute2, timeCommute3, timeCommute4, timeCommute5, timeCommute6;
+CLASS TimeCommute pTimeCommute[NB_TABLES]  // useful in an array
+#ifdef MAIN // init static array -- CAUTION: must be populed with NB_TABLES defined!!
+= { timeCommute1, timeCommute2, timeCommute3, timeCommute4, timeCommute5, timeCommute6 };
 #else
 ;
 #endif

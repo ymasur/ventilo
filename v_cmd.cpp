@@ -1,8 +1,9 @@
 /*
   v_cmd.cpp
   ---------
-  30.08.2019 - ymasur@microclub.ch
-
+  01.09.2019 - ymasur@microclub.ch
+  05.11.2019 - ymasur@microclub.ch: reload timer if relay already ON
+  
   Main module:
   - setup of hardware I/O
   - setup of soft tasks and objects
@@ -73,10 +74,7 @@ void setup()
   else
   {
     display_info("Commutations read..."); delay(2000);
-    for (u16 i = 0; i < 4; i++)
-    {
-      pTimeCommute[i].read_EEPROM(i);
-    }
+    eeprom_read_tables(); 
   }
 
   myTime = rtc.now(); // get the RTC time
@@ -91,27 +89,45 @@ void setup()
   display_info(F("Programme pret.      "));
   log_msg(F(__PROG__ " " VERSION "\n"));
 
-} // setup
+} // end setup()
+
+
+/*  eeprom_read_tables()
+    --------------------
+    Used at start, or after clearing EEPROM datas
+    Var modified: tables in array pTimeCommute
+    Return value: -
+*/
+void eeprom_read_tables(void)
+{
+    for (u16 i = 0; i < NB_TABLES; i++)
+      pTimeCommute[i].read_EEPROM(i);
+}
 
 /*  eepromInit()
     ------------
-    Prepare the datas of the EEPROM
+    Prepare the datas of the EEPROM.
+    Var modified: all data of EEPROM are zeroed, tables too
+    Return : -
 */
 void eepromInit()
-{
-      // Formatter l'EEPROM
+{               //  01234567890123456789
+    display_info(F("Tables clearing!!   ")); //delay(1000);
+      // Format of EEPROM
     for (uint16_t i = 0 ; i < EEPROM.length() ; i++) 
        EEPROM.write( i, 0 );
     Serial.println( "EEPROM cleared!" );
     
-    // Valeur par défaut pour savoir si l'EEPROM est formatté
+    // Default value, after format
     EEPROM.write( 0, EEPROM_SIGNATURE ); 
     Serial.println( "EEPROM signature written..." );
 
-    // Définir une version
+    // Define the version of data arrangement
     EEPROM.write( 1, EEPROM_VERSION ); 
     Serial.println( "Version written." );
     
+    //tables must be erased, too
+    eeprom_read_tables(); 
 }
 
 /* blink(short n=1, short t=1)
@@ -199,6 +215,7 @@ void CmutRel::off()
     the relay is ON while the timer is counting down.
     - IO used: LED_C, REL
     - var used: state, timer_LED, timer
+    - return value: state
  */
 uint8_t CmutRel::run()
 {
@@ -214,7 +231,7 @@ uint8_t CmutRel::run()
     }
     else                // A: no, decrement timer
     {
-      --timer_LED;      // and blink the LED as the half second
+      --timer_LED;      // and blink the LED with the half second bit
       digitalWrite(LED_C, (timer_LED & 0x1));     
     }
   break;
@@ -226,12 +243,11 @@ uint8_t CmutRel::run()
     }
     else
     {
-      --timer;      // A: non, decrement timer
+      --timer;      // A: no, decrement timer
     }
   break;
     
   default:
-    // off();
     break;
   }
   return state;
@@ -239,24 +255,30 @@ uint8_t CmutRel::run()
 
 /*  chk_relay_time()
     ----------------
-    Once a minute, check in the commutation time if a match is found.
+    Once a minute, check in the commutation time if a match is found in the table.
     Called by poll_loop_5().
-    Start the LED_C to blink
+    Start the LED_C to blink, if a matching time is found
     00:00 is considered as uninitialized and do nothing.
     
     Return: -
 */
 void chk_relay_time()
 {
-  for (short i=0; i<4; i++)
+  for (short i=0; i<NB_TABLES; i++)
     if (pTimeCommute[i].chk_time() )
     {
       char ln_menu[21];
 
       if (cmutRel.getSt() == CR_OFF) // Q: is relay OFF?
-          cmutRel.on_LED();          // A: yes, start sequence
+      {
+         cmutRel.on_LED();          // A: yes, start sequence
+      }
+      else if(cmutRel.getSt() == CR_ON) // Q: already ON?
+      {
+        cmutRel.on();               // A: Yes, this call reload the timer
+      }
 
-      cmutRel.commute_table = i+1; // memorize the table found
+      cmutRel.commute_table = i+1; // memorize the table found, to display it
 
       snprintf(ln_menu, sizeof(ln_menu), "COMM. %1d -> %02d:%02d ", 
                cmutRel.commute_table, pTimeCommute[i].get_hh(), pTimeCommute[i].get_mm()
@@ -285,7 +307,10 @@ void poll_loop_5()
 
 /*  poll_loop_X_ms()
     ----------------
-
+    Compute the state of switches
+    Modified var: intern of object Sw.
+    The polling time must be between 10..50 ms
+    Return value: -
 */
 void poll_loop_X_ms()
 {
@@ -298,7 +323,8 @@ void poll_loop_X_ms()
 }
 
 /*  main loop
- *  ---------
+    ---------
+    All the job is done trough jm_cheduler object
  */
 void loop()
 {
